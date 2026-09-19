@@ -1,0 +1,6 @@
+# Git ignore generated / large files
+data/*.csv
+*.log
+perf_results.txt
+node_modules/
+.DS_Store
