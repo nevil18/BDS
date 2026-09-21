@@ -7,8 +7,11 @@ S3_URI="s3://bigdata1234567890/submissions_2million.csv"
 
 echo ">> Creating HDFS directories..."
 hdfs dfs -mkdir -p "$HDFS_BASE/input"
+hdfs dfs -mkdir -p "$HDFS_BASE/output_backup"
 
 echo ">> Streaming CSV from S3 into HDFS..."
 aws s3 cp "$S3_URI" - | hdfs dfs -put -f - "$HDFS_BASE/input/submissions.csv"
 
+echo ">> Running HDFS fsck block check..."
+hdfs fsck "$HDFS_BASE/input/submissions.csv" -files -blocks || true
 echo "✓ Uploaded dataset to HDFS: $HDFS_BASE/input/submissions.csv"
