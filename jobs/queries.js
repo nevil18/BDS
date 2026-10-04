@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * queries.js  –  Analytical insights from MongoDB stats collection
- * Q1, Q2, Q3, Q4 queries
+ * Q1, Q2, Q3, Q4, Q5 queries
  */
 "use strict";
 
@@ -112,6 +112,20 @@ async function main() {
   printTable("Q4: Total Submissions per Language (Top 15)", totalPerLang, [
     { key: "language", label: "Language",  width: 30 },
     { key: "total",    label: "Total",     width: 12 },
+  ]);
+
+  // Q5. Most common verdict overall
+  const verdictCounts = await col
+    .aggregate([
+      { $group: { _id: "$verdict", total: { $sum: "$count" } } },
+      { $sort: { total: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, verdict: "$_id", total: 1 } },
+    ])
+    .toArray();
+  printTable("Q5: Most Common Verdicts (Top 10)", verdictCounts, [
+    { key: "verdict", label: "Verdict",  width: 35 },
+    { key: "total",   label: "Count",    width: 12 },
   ]);
 
   await client.close();
