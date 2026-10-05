@@ -1,8 +1,19 @@
 #!/usr/bin/env node
 /**
- * queries.js  –  Analytical insights from MongoDB stats collection
- * Q1, Q2, Q3, Q4, Q5 queries
+ * queries.js  –  5 analytical insights from the MongoDB stats collection
+ * Student 3 – MongoDB + Analytics Component
+ *
+ * Run INSIDE the namenode container after load.js:
+ *   docker exec namenode node /jobs/queries.js
+ *
+ * Insights:
+ *   Q1. Top 10 languages by Time Limit Exceeded (TLE)
+ *   Q2. Top 10 languages by Memory Limit Exceeded (MLE)
+ *   Q3. Acceptance rate per language (AC / total submissions)
+ *   Q4. Total submissions per language (all verdicts)
+ *   Q5. Most common verdict overall
  */
+
 "use strict";
 
 const { MongoClient } = require("mongodb");
@@ -30,7 +41,7 @@ async function main() {
   await client.connect();
   const col = client.db(DB_NAME).collection(COLLECTION);
 
-  // Q1. Top 10 languages by TLE
+  // ── Q1: Top 10 languages by TLE ──────────────────────────────────────────
   const tleLangs = await col
     .aggregate([
       { $match: { verdict: { $regex: /time limit exceeded/i } } },
@@ -45,7 +56,7 @@ async function main() {
     { key: "tle_count", label: "TLE Count",      width: 12 },
   ]);
 
-  // Q2. Top 10 languages by MLE
+  // ── Q2: Top 10 languages by MLE ──────────────────────────────────────────
   const mleLangs = await col
     .aggregate([
       { $match: { verdict: { $regex: /memory limit exceeded/i } } },
@@ -60,7 +71,7 @@ async function main() {
     { key: "mle_count", label: "MLE Count",      width: 12 },
   ]);
 
-  // Q3. Acceptance rate per language
+  // ── Q3: Acceptance rate per language ─────────────────────────────────────
   const acceptRates = await col
     .aggregate([
       {
@@ -88,7 +99,7 @@ async function main() {
           },
         },
       },
-      { $match: { total: { $gte: 50 } } },
+      { $match: { total: { $gte: 50 } } }, // filter low-sample languages
       { $sort: { accepted: -1 } },
       { $limit: 15 },
     ])
@@ -100,7 +111,7 @@ async function main() {
     { key: "acceptance_rate", label: "Accept Rate",      width: 12 },
   ]);
 
-  // Q4. Total submissions per language
+  // ── Q4: Total submissions per language ────────────────────────────────────
   const totalPerLang = await col
     .aggregate([
       { $group: { _id: "$language", total: { $sum: "$count" } } },
@@ -114,7 +125,7 @@ async function main() {
     { key: "total",    label: "Total",     width: 12 },
   ]);
 
-  // Q5. Most common verdict overall
+  // ── Q5: Most common verdict overall ──────────────────────────────────────
   const verdictCounts = await col
     .aggregate([
       { $group: { _id: "$verdict", total: { $sum: "$count" } } },
@@ -128,7 +139,11 @@ async function main() {
     { key: "total",   label: "Count",    width: 12 },
   ]);
 
+  console.log("\n✓ All queries complete.\n");
   await client.close();
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
